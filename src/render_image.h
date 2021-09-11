@@ -1,0 +1,51 @@
+#pragma once
+
+#include <future>
+
+#include <qt5/QtCore/QObject>
+#include <qt5/QtWebKitWidgets/QWebPage>
+#include <qt5/QtWebKitWidgets/QWebFrame>
+#include <qt5/QtGui/QPainter>
+#include <qt5/QtGui/QImage>
+#include <qt5/QtWidgets/QApplication>
+
+#include <qt5/QtCore/QObject>
+
+#include "converter.h"
+
+class Render : public QObject
+{
+    Q_OBJECT
+
+  public:
+    Render(const char* const html, const options_t& options, results_t* const results) : options_(options), results_(results)
+    {
+        QObject::connect(&page_, &QWebPage::loadFinished, this, &Render::finish);
+        page_.setViewportSize(QSize(options.width, 10));
+        page_.mainFrame()->setHtml(html);
+    }
+
+private Q_SLOTS:
+    void finish()
+    {
+        page_.setViewportSize(page_.mainFrame()->contentsSize());
+        QImage image(page_.viewportSize(), QImage::Format_ARGB32);
+        QPainter painter(&image);
+
+        page_.mainFrame()->render(&painter);
+        painter.end();
+
+        image.save(options_.filename);
+
+        if (results_) {
+            results_->height = page_.mainFrame()->contentsSize().height();
+            results_->width = page_.mainFrame()->contentsSize().width();
+        }
+    }
+
+  private:
+    const options_t& options_;
+    results_t* const results_;
+    QWebPage page_;
+};
+
