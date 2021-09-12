@@ -37,6 +37,5 @@ void html2image(const std::string& html, const options_t& options, results_t* co
 {
     static int argc = 0;
     static QApplication a(argc, nullptr); // could not use QCoreApplication because QWebPage will create Widget
-    Render r(html.c_str(), options, results);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    Render(html.c_str(), options, results);
 }

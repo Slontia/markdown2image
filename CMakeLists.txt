@@ -9,7 +9,7 @@ add_subdirectory(third-party/md4c)
 
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt5 COMPONENTS Gui Widgets WebKitWidgets REQUIRED)
+find_package(Qt5 COMPONENTS Gui Widgets WebKitWidgets Test REQUIRED)
 find_package(gflags)
 
 add_custom_target(moc_converter COMMAND moc-qt5 ${CMAKE_SOURCE_DIR}/converter.h)
@@ -17,5 +17,5 @@ add_custom_target(moc_converter COMMAND moc-qt5 ${CMAKE_SOURCE_DIR}/converter.h)
 include_directories(${CMAKE_SOURCE_DIR}/third-party/md4c/src)
 
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/main.cc ${CMAKE_SOURCE_DIR}/src/converter.cc)
-target_link_libraries(${PROJECT_NAME} md4c-html Qt5::Gui Qt5::Widgets Qt5::WebKitWidgets gflags)
+target_link_libraries(${PROJECT_NAME} md4c-html Qt5::Gui Qt5::Widgets Qt5::WebKitWidgets Qt5::Test gflags)
 
