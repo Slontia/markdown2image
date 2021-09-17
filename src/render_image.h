@@ -9,18 +9,24 @@
 #include <qt5/QtGui/QImage>
 #include <qt5/QtWidgets/QApplication>
 
-#include <qt5/QtCore/QObject>
+struct options_t
+{
+    const char* filename = nullptr;
+    uint32_t width = 700;
+};
 
-#include <qt5/QtTest/QSignalSpy>
-
-#include "converter.h"
+struct results_t
+{
+    uint32_t width = 0;
+    uint32_t height = 0;
+};
 
 class Render : public QObject
 {
     Q_OBJECT
 
   public:
-    Render(const char* const html, const options_t& options, results_t* const results) : is_ok_(false)
+    Render(const char* const html, const options_t& options, results_t& results) : is_ok_(false)
     {
         QObject::connect(&page_, &QWebPage::loadFinished, this, &Render::finish);
         page_.setViewportSize(QSize(options.width, 10));
@@ -28,7 +34,8 @@ class Render : public QObject
 
         if (!is_ok_) { // if need run async
             QEventLoop loop;
-            QObject::connect(&page_, &QWebPage::loadFinished, &loop, &QEventLoop::quit);
+            // not wait loadFinished to avoid finish before exec
+            QObject::connect(this, &Render::over, &loop, &QEventLoop::quit);
             loop.exec();
         }
 
@@ -41,14 +48,19 @@ class Render : public QObject
 
         image.save(options.filename);
 
-        if (results) {
-            results->height = page_.mainFrame()->contentsSize().height();
-            results->width = page_.mainFrame()->contentsSize().width();
-        }
+        results.height = page_.mainFrame()->contentsSize().height();
+        results.width = page_.mainFrame()->contentsSize().width();
     }
 
   public slots:
-    void finish() { is_ok_ = true; }
+    void finish()
+    {
+        is_ok_ = true;
+        emit over();
+    }
+
+  signals:
+    void over();
 
   private:
     QWebPage page_;
