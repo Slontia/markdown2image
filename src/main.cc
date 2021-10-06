@@ -69,7 +69,7 @@ std::string markdown2html(const std::string& markdown)
 {
     std::string output;
     output.reserve(markdown.size() + markdown.size() / 8 + 64);
-    if (0 != md_html(markdown.c_str(), markdown.size(), &md4c_callback, &output, 0,
+    if (0 != md_html(markdown.c_str(), markdown.size(), &md4c_callback, &output, MD_FLAG_TABLES,
                 MD_HTML_FLAG_DEBUG | MD_HTML_FLAG_SKIP_UTF8_BOM)) {
         return {};
     }
@@ -85,6 +85,17 @@ int html2image(const char* html, const options_t& options, results_t& results)
 }
 
 }
+
+const char* const k_table_css =
+"<style>\n"
+"table {\n"
+"  border-collapse: collapse;\n"
+"}\n"
+"\n"
+"table, th, td {\n"
+"  border: 1px solid black;\n"
+"}\n"
+"</style>\n";
 
 int main(int argc, char** argv)
 {
@@ -108,7 +119,7 @@ int main(int argc, char** argv)
         std::cerr << "[ERROR] Failed to convert to html" << std::endl;
         return -1;
     }
-    const auto ret = html2image(html.c_str(), options, results);
+    const auto ret = html2image((k_table_css + html).c_str(), options, results);
     if (0 != ret) {
         std::cerr << "[ERROR] Failed to convert to image" << std::endl;
     }
