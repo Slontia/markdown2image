@@ -1,6 +1,9 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
+#include <sstream>
+#include <chrono>
+#include <iomanip>
 
 #include <gflags/gflags.h>
 #include <unistd.h>
@@ -11,19 +14,11 @@
 #include "moc_render_image.cpp" // for AUTOMOC
 
 DEFINE_string(input, "", "The input filename of the markdown file");
-DEFINE_string(output, "output.png", "The output filename of the image");
+DEFINE_string(output, "", "The output filename of the image");
 DEFINE_int32(width, 700, "The width of the image");
+DEFINE_bool(to_html, false, "Only output the html string");
 
 namespace {
-
-bool valid_string(const char* flag_name, const std::string& str)
-{
-    if (!str.empty()) {
-        return true;
-    }
-    std::cerr << "[ERROR] Empty flag \"" << flag_name << "\"" << std::endl;
-    return false;
-}
 
 bool valid_positive_number(const char* flag_name, const int32_t n)
 {
@@ -34,7 +29,6 @@ bool valid_positive_number(const char* flag_name, const int32_t n)
     return false;
 }
 
-const bool validate_output = google::RegisterFlagValidator(&FLAGS_output, &valid_string);
 const bool validate_width = google::RegisterFlagValidator(&FLAGS_width, &valid_positive_number);
 
 std::string load_markdown()
@@ -84,6 +78,20 @@ int html2image(const char* html, const options_t& options, results_t& results)
     return 0;
 }
 
+void set_default_output_name()
+{
+    if (!FLAGS_output.empty()) {
+        return;
+    }
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&in_time_t), "md2img_%Y-%m-%d_%H-%M-%S.png");
+
+    FLAGS_output = ss.str();
+}
+
 }
 
 const char* const k_table_css =
@@ -103,6 +111,8 @@ int main(int argc, char** argv)
 
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
+    set_default_output_name();
+
     options_t options;
     options.filename = FLAGS_output.c_str();
     options.width = static_cast<uint32_t>(FLAGS_width);
@@ -119,13 +129,18 @@ int main(int argc, char** argv)
         std::cerr << "[ERROR] Failed to convert to html" << std::endl;
         return -1;
     }
+
+    if (FLAGS_to_html) {
+        std::cout << html << std::endl;
+        return 0;
+    }
+
     const auto ret = html2image((k_table_css + html).c_str(), options, results);
     if (0 != ret) {
         std::cerr << "[ERROR] Failed to convert to image" << std::endl;
     }
-    return ret;
 
-    std::cout << "Generate image to " << FLAGS_output << ", size=(" << results.width << ", " << results.height << ")" << std::endl;
+    std::cout << FLAGS_output << "\n" << results.width << " " << results.height << std::endl;
 
     return 0;
 }
