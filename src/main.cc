@@ -17,6 +17,7 @@ DEFINE_string(input, "", "The input filename of the markdown file");
 DEFINE_string(output, "", "The output filename of the image");
 DEFINE_int32(width, 700, "The width of the image");
 DEFINE_bool(to_html, false, "Only output the html string");
+DEFINE_bool(with_css, true, "With default css configuration");
 
 namespace {
 
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    const std::string html = markdown2html(markdown);
+    std::string html = markdown2html(markdown);
     if (html.empty()) {
         std::cerr << "[ERROR] Failed to convert to html" << std::endl;
         return -1;
@@ -135,7 +136,11 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    const auto ret = html2image((k_table_css + html).c_str(), options, results);
+    if (FLAGS_with_css) {
+        html = k_table_css + html;
+    }
+
+    const auto ret = html2image(html.c_str(), options, results);
     if (0 != ret) {
         std::cerr << "[ERROR] Failed to convert to image" << std::endl;
     }
