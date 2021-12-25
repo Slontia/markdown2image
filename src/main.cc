@@ -13,6 +13,10 @@
 #include "render_image.h"
 #include "moc_render_image.cpp" // for AUTOMOC
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 DEFINE_string(input, "", "The input filename of the markdown file");
 DEFINE_string(output, "", "The output filename of the image");
 DEFINE_int32(width, 700, "The width of the image");
@@ -108,7 +112,11 @@ const char* const k_table_css =
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+    SetEnvironmentVariable(TEXT("QT_QPA_PLATFORM"), TEXT("offscreen"));
+#elif __linux__
     setenv("QT_QPA_PLATFORM", "offscreen", 1);
+#endif
 
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 

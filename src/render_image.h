@@ -2,12 +2,12 @@
 
 #include <future>
 
-#include <qt5/QtCore/QObject>
-#include <qt5/QtWebKitWidgets/QWebPage>
-#include <qt5/QtWebKitWidgets/QWebFrame>
-#include <qt5/QtGui/QPainter>
-#include <qt5/QtGui/QImage>
-#include <qt5/QtWidgets/QApplication>
+#include <QtCore/QObject>
+#include <QtWebKitWidgets/QWebPage>
+#include <QtWebKitWidgets/QWebFrame>
+#include <QtGui/QPainter>
+#include <QtGui/QImage>
+#include <QtWidgets/QApplication>
 
 struct options_t
 {
