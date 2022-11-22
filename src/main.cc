@@ -22,6 +22,7 @@ DEFINE_string(output, "", "The output filename of the image");
 DEFINE_int32(width, 700, "The width of the image");
 DEFINE_bool(to_html, false, "Only output the html string");
 DEFINE_bool(with_css, true, "With default css configuration");
+DEFINE_bool(print_info, true, "Print info of the output image");
 
 namespace {
 
@@ -153,7 +154,9 @@ int main(int argc, char** argv)
         std::cerr << "[ERROR] Failed to convert to image" << std::endl;
     }
 
-    std::cout << FLAGS_output << "\n" << results.width << " " << results.height << std::endl;
+    if (FLAGS_print_info) {
+        std::cout << FLAGS_output << "\n" << results.width << " " << results.height << std::endl;
+    }
 
     return 0;
 }
