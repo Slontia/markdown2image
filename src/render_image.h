@@ -1,12 +1,11 @@
 #pragma once
 
-#include <future>
-
-#include <QtCore/QObject>
-#include <QtWebKitWidgets/QWebPage>
-#include <QtWebKitWidgets/QWebFrame>
-#include <QtGui/QPainter>
+#include <QtCore/QEventLoop>
+#include <QtCore/QTimer>
+#include <QtWebEngineWidgets/QWebEngineView>
+#include <QtWebEngineCore/QWebEnginePage>
 #include <QtGui/QImage>
+#include <QtGui/QPainter>
 #include <QtWidgets/QApplication>
 
 struct options_t
@@ -21,48 +20,61 @@ struct results_t
     uint32_t height = 0;
 };
 
-class Render : public QObject
+class Render
 {
-    Q_OBJECT
-
   public:
-    Render(const char* const html, const options_t& options, results_t& results) : is_ok_(false)
+    Render(const char* const html, const options_t& options, results_t& results)
     {
-        QObject::connect(&page_, &QWebPage::loadFinished, this, &Render::finish);
-        page_.setViewportSize(QSize(options.width, 10));
-        page_.mainFrame()->setHtml(html);
+        view_.resize(options.width, 10);
+        view_.show();
+        view_.setHtml(QString::fromUtf8(html));
 
-        if (!is_ok_) { // if need run async
+        {
             QEventLoop loop;
-            // not wait loadFinished to avoid finish before exec
-            QObject::connect(this, &Render::over, &loop, &QEventLoop::quit);
+            QObject::connect(view_.page(), &QWebEnginePage::loadFinished, &loop, &QEventLoop::quit);
             loop.exec();
         }
 
-        page_.setViewportSize(page_.mainFrame()->contentsSize());
-        QImage image(page_.viewportSize(), QImage::Format_ARGB32);
-        QPainter painter(&image);
+        // Get full document height via JavaScript
+        int doc_height = 10;
+        {
+            QEventLoop loop;
+            view_.page()->runJavaScript(
+                QStringLiteral("Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)"),
+                [&](const QVariant& v) {
+                    doc_height = v.toInt();
+                    loop.quit();
+                });
+            loop.exec();
+        }
 
-        page_.mainFrame()->render(&painter);
+        view_.resize(options.width, doc_height);
+
+        // Wait for re-render after resize
+        {
+            QEventLoop loop;
+            QTimer::singleShot(200, &loop, &QEventLoop::quit);
+            loop.exec();
+        }
+
+#if defined(__APPLE__)
+        // On macOS with cocoa platform, grab() works correctly
+        QImage image = view_.grab().toImage();
+#else
+        // On Linux/Windows with offscreen platform, render() via QPainter
+        QImage image(view_.size(), QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        view_.render(&painter);
         painter.end();
+#endif
 
         image.save(options.filename);
 
-        results.height = page_.mainFrame()->contentsSize().height();
-        results.width = page_.mainFrame()->contentsSize().width();
+        results.width = image.width();
+        results.height = image.height();
     }
-
-  public slots:
-    void finish()
-    {
-        is_ok_ = true;
-        emit over();
-    }
-
-  signals:
-    void over();
 
   private:
-    QWebPage page_;
-    bool is_ok_;
+    QWebEngineView view_;
 };

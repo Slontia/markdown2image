@@ -11,7 +11,6 @@
 #include <md4c-html.h>
 
 #include "render_image.h"
-#include "moc_render_image.cpp" // for AUTOMOC
 
 #ifdef _WIN32
 #include <windows.h>
@@ -78,8 +77,10 @@ std::string markdown2html(const std::string& markdown)
 
 int html2image(const char* html, const options_t& options, results_t& results)
 {
-    int argc = 0;
-    QApplication a(argc, nullptr); // could not use QCoreApplication because QWebPage will create Widget
+    int argc = 1;
+    char prog[] = "markdown2image";
+    char* argv[] = {prog, nullptr};
+    QApplication a(argc, argv); // could not use QCoreApplication because QWebPage will create Widget
     Render(html, options, results);
     return 0;
 }
