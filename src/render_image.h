@@ -1,5 +1,14 @@
 #pragma once
 
+#ifdef USE_QT5WEBKIT
+#include <QtCore/QEventLoop>
+#include <QtCore/QTimer>
+#include <QtWebKitWidgets/QWebView>
+#include <QtWebKitWidgets/QWebFrame>
+#include <QtGui/QImage>
+#include <QtGui/QPainter>
+#include <QtWidgets/QApplication>
+#else
 #include <QtCore/QEventLoop>
 #include <QtCore/QTimer>
 #include <QtWebEngineWidgets/QWebEngineView>
@@ -7,6 +16,7 @@
 #include <QtGui/QImage>
 #include <QtGui/QPainter>
 #include <QtWidgets/QApplication>
+#endif
 
 struct options_t
 {
@@ -19,6 +29,46 @@ struct results_t
     uint32_t width = 0;
     uint32_t height = 0;
 };
+
+#ifdef USE_QT5WEBKIT
+
+class Render
+{
+  public:
+    Render(const char* const html, const options_t& options, results_t& results)
+    {
+        view_.resize(options.width, 10);
+        view_.show();
+        view_.setHtml(QString::fromUtf8(html));
+
+        {
+            QEventLoop loop;
+            QObject::connect(&view_, &QWebView::loadFinished, &loop, &QEventLoop::quit);
+            loop.exec();
+        }
+
+        QWebFrame* frame = view_.page()->mainFrame();
+        const int doc_height = frame->contentsSize().height();
+
+        view_.page()->setViewportSize(QSize(options.width, doc_height));
+
+        QImage image(options.width, doc_height, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        frame->render(&painter);
+        painter.end();
+
+        image.save(options.filename);
+
+        results.width = image.width();
+        results.height = image.height();
+    }
+
+  private:
+    QWebView view_;
+};
+
+#else
 
 class Render
 {
@@ -78,3 +128,5 @@ class Render
   private:
     QWebEngineView view_;
 };
+
+#endif
