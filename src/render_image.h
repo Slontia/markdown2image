@@ -2,8 +2,8 @@
 
 #ifdef USE_QT5WEBKIT
 #include <QtCore/QEventLoop>
-#include <QtCore/QTimer>
-#include <QtWebKitWidgets/QWebView>
+#include <QtCore/QObject>
+#include <QtWebKitWidgets/QWebPage>
 #include <QtWebKitWidgets/QWebFrame>
 #include <QtGui/QImage>
 #include <QtGui/QPainter>
@@ -32,30 +32,29 @@ struct results_t
 
 #ifdef USE_QT5WEBKIT
 
-class Render
+class Render : public QObject
 {
-  public:
-    Render(const char* const html, const options_t& options, results_t& results)
-    {
-        view_.resize(options.width, 10);
-        view_.show();
-        view_.setHtml(QString::fromUtf8(html));
+    Q_OBJECT
 
-        {
+  public:
+    Render(const char* const html, const options_t& options, results_t& results) : is_ok_(false)
+    {
+        QObject::connect(&page_, &QWebPage::loadFinished, this, &Render::onLoadFinished);
+        page_.setViewportSize(QSize(options.width, 10));
+        page_.mainFrame()->setHtml(QString::fromUtf8(html));
+
+        if (!is_ok_) {
             QEventLoop loop;
-            QObject::connect(&view_, &QWebView::loadFinished, &loop, &QEventLoop::quit);
+            QObject::connect(this, &Render::loadDone, &loop, &QEventLoop::quit);
             loop.exec();
         }
 
-        QWebFrame* frame = view_.page()->mainFrame();
-        const int doc_height = frame->contentsSize().height();
+        page_.setViewportSize(page_.mainFrame()->contentsSize());
 
-        view_.page()->setViewportSize(QSize(options.width, doc_height));
-
-        QImage image(options.width, doc_height, QImage::Format_ARGB32);
+        QImage image(page_.viewportSize(), QImage::Format_ARGB32);
         image.fill(Qt::white);
         QPainter painter(&image);
-        frame->render(&painter);
+        page_.mainFrame()->render(&painter);
         painter.end();
 
         image.save(options.filename);
@@ -64,9 +63,22 @@ class Render
         results.height = image.height();
     }
 
+  public slots:
+    void onLoadFinished()
+    {
+        is_ok_ = true;
+        emit loadDone();
+    }
+
+  signals:
+    void loadDone();
+
   private:
-    QWebView view_;
+    QWebPage page_;
+    bool is_ok_;
 };
+
+#include "moc_render_image.cpp"
 
 #else
 
