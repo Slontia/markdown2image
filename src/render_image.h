@@ -2,7 +2,6 @@
 
 #ifdef USE_QT5WEBKIT
 #include <QtCore/QEventLoop>
-#include <QtCore/QObject>
 #include <QtWebKitWidgets/QWebPage>
 #include <QtWebKitWidgets/QWebFrame>
 #include <QtGui/QImage>
@@ -32,20 +31,21 @@ struct results_t
 
 #ifdef USE_QT5WEBKIT
 
-class Render : public QObject
+class Render
 {
-    Q_OBJECT
-
   public:
-    Render(const char* const html, const options_t& options, results_t& results) : is_ok_(false)
+    Render(const char* const html, const options_t& options, results_t& results)
     {
-        QObject::connect(&page_, &QWebPage::loadFinished, this, &Render::onLoadFinished);
+        QEventLoop loop;
+        bool loaded = false;
+        QObject::connect(&page_, &QWebPage::loadFinished, [&](bool) {
+            loaded = true;
+            loop.quit();
+        });
         page_.setViewportSize(QSize(options.width, 10));
         page_.mainFrame()->setHtml(QString::fromUtf8(html));
 
-        if (!is_ok_) {
-            QEventLoop loop;
-            QObject::connect(this, &Render::loadDone, &loop, &QEventLoop::quit);
+        if (!loaded) {
             loop.exec();
         }
 
@@ -63,22 +63,9 @@ class Render : public QObject
         results.height = image.height();
     }
 
-  public slots:
-    void onLoadFinished()
-    {
-        is_ok_ = true;
-        emit loadDone();
-    }
-
-  signals:
-    void loadDone();
-
   private:
     QWebPage page_;
-    bool is_ok_;
 };
-
-#include "moc_render_image.cpp"
 
 #else
 
