@@ -1,8 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
 project(markdown2image LANGUAGES CXX C)
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -shared -fpic -pie  -Wl,-E,-emain")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 
@@ -25,3 +23,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party/md4c/src)
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 target_link_libraries(${PROJECT_NAME} md4c-html ${QT_LIBS} gflags)
+if(USE_QT5WEBKIT)
+  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+else()
+  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+endif()
