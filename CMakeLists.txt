@@ -4,6 +4,7 @@ project(markdown2image LANGUAGES CXX C)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 add_subdirectory(third-party/md4c)
 
 option(USE_QT5WEBKIT "Use Qt5WebKit instead of Qt6 WebEngine" ON)
